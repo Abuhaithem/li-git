@@ -3,7 +3,12 @@
 
 #include "repo.h"
 
-/* Entry point placeholder: will dispatch subcommands as they are implemented. */
+/*
+ * CLI entry point. Currently supports only `init`, delegating to repo_init.
+ * Future subcommands (hash-object, cat-file, write-tree, commit-tree, etc.)
+ * will extend this dispatcher. Returns non-zero on errors for shell scripting
+ * friendliness.
+ */
 int main(int argc, char **argv) {
     if (argc >= 2 && strcmp(argv[1], "init") == 0) {
         if (repo_init(".") == 0) {

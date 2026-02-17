@@ -9,7 +9,11 @@
 
 #define LGIT_PATH_MAX 4096
 
-/* Ensure a directory exists; treat already-existing as success. */
+/*
+ * ensure_dir
+ * Creates a directory with the requested mode. Treats an existing directory
+ * as success to keep init idempotent. Returns 0 on success, -1 on failure.
+ */
 static int ensure_dir(const char *path, mode_t mode) {
     if (mkdir(path, mode) == 0) {
         return 0;
@@ -20,7 +24,11 @@ static int ensure_dir(const char *path, mode_t mode) {
     return -1;
 }
 
-/* Safe snprintf wrapper: returns 0 on success, -1 on truncation/error. */
+/*
+ * join_path
+ * Safe path join helper using snprintf. Returns 0 on success, -1 on truncation
+ * or formatting error. Callers pass in fixed-size buffers to avoid heap use.
+ */
 static int join_path(char *dst, size_t dst_len, const char *base, const char *suffix) {
     int n = snprintf(dst, dst_len, "%s/%s", base, suffix);
     if (n < 0 || (size_t)n >= dst_len) {
@@ -29,6 +37,16 @@ static int join_path(char *dst, size_t dst_len, const char *base, const char *su
     return 0;
 }
 
+/*
+ * repo_init
+ * Create the minimal repository layout under `path` (or "." when NULL):
+ *   .lgit/
+ *     objects/
+ *     refs/heads/
+ *     HEAD -> ref: refs/heads/master
+ * Uses defensive path joins and fails fast on any error. Returns 0 on success,
+ * -1 on failure without partially written HEAD when possible.
+ */
 int repo_init(const char *path) {
     char lgit[LGIT_PATH_MAX];
     char objects[LGIT_PATH_MAX];
@@ -39,6 +57,7 @@ int repo_init(const char *path) {
     const char *root = path ? path : ".";
 
     int n = snprintf(lgit, sizeof lgit, "%s/.lgit", root);
+
     if (n < 0 || (size_t)n >= sizeof lgit) {
         return -1;
     }
